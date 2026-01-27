@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -62,15 +61,8 @@ func GinLogrusLogger() gin.HandlerFunc {
 		providers := util.GetProviderName(model)
 		provider := "unknown"
 
-		// Try to get more detailed provider/channel information from model registry
-		if modelInfo := registry.LookupModelInfo(model); modelInfo != nil {
-			// Use model type as more specific provider/channel name if available
-			if modelInfo.Type != "" {
-				provider = modelInfo.Type
-			} else if len(providers) > 0 {
-				provider = providers[0]
-			}
-		} else if len(providers) > 0 {
+		// Try to get more detailed provider/channel information
+		if len(providers) > 0 {
 			provider = providers[0]
 		}
 
@@ -96,24 +88,56 @@ func GinLogrusLogger() gin.HandlerFunc {
 		method := c.Request.Method
 		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
 
+		// Get account info from context if available
+		var accountInfo string
+		if accountVal := c.Request.Context().Value("cliproxy.account_info"); accountVal != nil {
+			if accountStr, ok := accountVal.(string); ok {
+				accountInfo = accountStr
+			}
+		}
+
 		if requestID == "" {
 			requestID = "--------"
 		}
-		// Add provider and model information to log line
-		logLine := fmt.Sprintf("%3d | %13v | %15s | %-7s \"%s\" | provider=%s | model=%s", statusCode, latency, clientIP, method, path, provider, model)
-		if errorMessage != "" {
-			logLine = logLine + " | " + errorMessage
+
+		logLine := fmt.Sprintf("%s | %d | %13v | %s | %s | %s",
+			requestID,
+			statusCode,
+			latency,
+			clientIP,
+			method,
+			path,
+		)
+
+		logEntry := log.WithFields(log.Fields{
+			"request_id": requestID,
+			"status":     statusCode,
+			"latency":    latency,
+			"client_ip":  clientIP,
+			"method":     method,
+			"path":       path,
+			"provider":   provider,
+			"model":      model,
+		})
+
+		// Add account info to log if available
+		if accountInfo != "" {
+			logEntry = logEntry.WithField("account", accountInfo)
+			// Also add to log line for better readability
+			logLine += " | account=" + accountInfo
 		}
 
-		entry := log.WithField("request_id", requestID).WithField("provider", provider).WithField("model", model)
+		if errorMessage != "" {
+			logEntry = logEntry.WithField("error", errorMessage)
+			logLine += " | error=" + errorMessage
+		}
 
-		switch {
-		case statusCode >= http.StatusInternalServerError:
-			entry.Error(logLine)
-		case statusCode >= http.StatusBadRequest:
-			entry.Warn(logLine)
-		default:
-			entry.Info(logLine)
+		if statusCode >= http.StatusInternalServerError {
+			logEntry.Error(logLine)
+		} else if statusCode >= http.StatusBadRequest {
+			logEntry.Warn(logLine)
+		} else {
+			logEntry.Info(logLine)
 		}
 	}
 }

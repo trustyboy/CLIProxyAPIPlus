@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"path/filepath"
@@ -588,6 +589,11 @@ func (m *Manager) executeMixedOnce(ctx context.Context, providers []string, req 
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
+		// Store account info in context for logging
+		accountType, accountInfo := auth.AccountInfo()
+		if accountInfo != "" {
+			execCtx = context.WithValue(execCtx, AccountInfoContextKey, fmt.Sprintf("%s:%s", accountType, accountInfo))
+		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)
 		execReq.Model = m.applyOAuthModelAlias(auth, execReq.Model)
@@ -641,6 +647,11 @@ func (m *Manager) executeCountMixedOnce(ctx context.Context, providers []string,
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
+		// Store account info in context for logging
+		accountType, accountInfo := auth.AccountInfo()
+		if accountInfo != "" {
+			execCtx = context.WithValue(execCtx, AccountInfoContextKey, fmt.Sprintf("%s:%s", accountType, accountInfo))
+		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)
 		execReq.Model = m.applyOAuthModelAlias(auth, execReq.Model)
@@ -693,6 +704,11 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 		if rt := m.roundTripperFor(auth); rt != nil {
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
+		}
+		// Store account info in context for logging
+		accountType, accountInfo := auth.AccountInfo()
+		if accountInfo != "" {
+			execCtx = context.WithValue(execCtx, AccountInfoContextKey, fmt.Sprintf("%s:%s", accountType, accountInfo))
 		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)
@@ -2017,6 +2033,9 @@ func (m *Manager) executorFor(provider string) ProviderExecutor {
 
 // roundTripperContextKey is an unexported context key type to avoid collisions.
 type roundTripperContextKey struct{}
+
+// AccountInfoContextKey is exported for use by logging middleware
+const AccountInfoContextKey = "cliproxy.account_info"
 
 // roundTripperFor retrieves an HTTP RoundTripper for the given auth if a provider is registered.
 func (m *Manager) roundTripperFor(auth *Auth) http.RoundTripper {
