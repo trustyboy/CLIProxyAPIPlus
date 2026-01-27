@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/registry"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/util"
 	log "github.com/sirupsen/logrus"
 	"github.com/tidwall/gjson"
@@ -60,7 +61,16 @@ func GinLogrusLogger() gin.HandlerFunc {
 		// Get provider name from model
 		providers := util.GetProviderName(model)
 		provider := "unknown"
-		if len(providers) > 0 {
+
+		// Try to get more detailed provider/channel information from model registry
+		if modelInfo := registry.LookupModelInfo(model); modelInfo != nil {
+			// Use model type as more specific provider/channel name if available
+			if modelInfo.Type != "" {
+				provider = modelInfo.Type
+			} else if len(providers) > 0 {
+				provider = providers[0]
+			}
+		} else if len(providers) > 0 {
 			provider = providers[0]
 		}
 
@@ -173,7 +183,7 @@ func extractModelFromRequest(c *gin.Context) string {
 		// Reset the body so it can be read again by subsequent handlers
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 	}
-	
+
 	if result := gjson.GetBytes(body, "model"); result.Exists() && result.Type == gjson.String {
 		return result.String()
 	}
