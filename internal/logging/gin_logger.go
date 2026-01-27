@@ -4,8 +4,10 @@
 package logging
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"runtime/debug"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/util"
 	log "github.com/sirupsen/logrus"
+	"github.com/tidwall/gjson"
 )
 
 // aiAPIPrefixes defines path prefixes for AI API requests that should have request ID tracking.
@@ -52,6 +55,15 @@ func GinLogrusLogger() gin.HandlerFunc {
 			c.Request = c.Request.WithContext(ctx)
 		}
 
+		// Extract model name before processing the request
+		model := extractModelFromRequest(c)
+		// Get provider name from model
+		providers := util.GetProviderName(model)
+		provider := "unknown"
+		if len(providers) > 0 {
+			provider = providers[0]
+		}
+
 		c.Next()
 
 		if shouldSkipGinRequestLogging(c) {
@@ -77,12 +89,13 @@ func GinLogrusLogger() gin.HandlerFunc {
 		if requestID == "" {
 			requestID = "--------"
 		}
-		logLine := fmt.Sprintf("%3d | %13v | %15s | %-7s \"%s\"", statusCode, latency, clientIP, method, path)
+		// Add provider and model information to log line
+		logLine := fmt.Sprintf("%3d | %13v | %15s | %-7s \"%s\" | provider=%s | model=%s", statusCode, latency, clientIP, method, path, provider, model)
 		if errorMessage != "" {
 			logLine = logLine + " | " + errorMessage
 		}
 
-		entry := log.WithField("request_id", requestID)
+		entry := log.WithField("request_id", requestID).WithField("provider", provider).WithField("model", model)
 
 		switch {
 		case statusCode >= http.StatusInternalServerError:
@@ -137,6 +150,7 @@ func SkipGinRequestLogging(c *gin.Context) {
 	c.Set(skipGinLogKey, true)
 }
 
+// shouldSkipGinRequestLogging checks if the provided Gin context is marked to skip logging.
 func shouldSkipGinRequestLogging(c *gin.Context) bool {
 	if c == nil {
 		return false
@@ -147,4 +161,45 @@ func shouldSkipGinRequestLogging(c *gin.Context) bool {
 	}
 	flag, ok := val.(bool)
 	return ok && flag
+}
+
+// extractModelFromRequest attempts to extract the model name from various request formats
+func extractModelFromRequest(c *gin.Context) string {
+	// First try to parse from JSON body (OpenAI, Claude, etc.)
+	// Check common model field names
+	var body []byte
+	if c.Request.Body != nil {
+		body, _ = io.ReadAll(c.Request.Body)
+		// Reset the body so it can be read again by subsequent handlers
+		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+	}
+	
+	if result := gjson.GetBytes(body, "model"); result.Exists() && result.Type == gjson.String {
+		return result.String()
+	}
+
+	// For Gemini requests, model is in the URL path
+	// Standard format: /models/{model}:generateContent -> :action parameter
+	if action := c.Param("action"); action != "" {
+		// Split by colon to get model name (e.g., "gemini-pro:generateContent" -> "gemini-pro")
+		parts := strings.Split(action, ":")
+		if len(parts) > 0 && parts[0] != "" {
+			return parts[0]
+		}
+	}
+
+	// AMP CLI format: /publishers/google/models/{model}:method -> *path parameter
+	// Example: /publishers/google/models/gemini-3-pro-preview:streamGenerateContent
+	if path := c.Param("path"); path != "" {
+		// Look for /models/{model}:method pattern
+		if idx := strings.Index(path, "/models/"); idx >= 0 {
+			modelPart := path[idx+8:] // Skip "/models/"
+			// Split by colon to get model name
+			if colonIdx := strings.Index(modelPart, ":"); colonIdx > 0 {
+				return modelPart[:colonIdx]
+			}
+		}
+	}
+
+	return ""
 }
