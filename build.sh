@@ -2,6 +2,7 @@
 #
 # build.sh - 自动构建脚本
 # 检查git更新 -> 停止服务 -> 拉取代码 -> 编译 -> 启动服务
+# 使用 -f 参数强制构建，跳过更新检查
 
 set -euo pipefail  # 严格模式：出错即止
 
@@ -95,13 +96,24 @@ start_service() {
 
 # ------------------- 主流程 -------------------
 main() {
+    # 检查命令行参数
+    FORCE_BUILD=false
+    if [[ "${1:-}" == "-f" ]]; then
+        FORCE_BUILD=true
+        echo "[INFO] 强制构建模式 (-f)，跳过更新检查"
+    fi
+
     echo "========================================"
     echo "  CLIProxyAPI 自动构建脚本"
     echo "========================================"
     echo ""
 
-    # 1. 检查git是否有新提交
-    check_git_updates
+    # 1. 检查git是否有新提交（除非强制构建）
+    if [[ "${FORCE_BUILD}" == false ]]; then
+        check_git_updates
+    else
+        echo "[INFO] 跳过更新检查，直接构建"
+    fi
 
     # 2. 停止服务
     stop_service
