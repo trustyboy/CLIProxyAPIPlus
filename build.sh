@@ -31,7 +31,7 @@ check_git_updates() {
         echo "[INFO] 本地提交: ${LOCAL_COMMIT}"
         echo "[INFO] 远程提交: ${REMOTE_COMMIT}"
         echo "[INFO] 提交差异:"
-        ${PROXY_CHAINS_CMD} git log --oneline HEAD..@{u}
+        ${PROXY_CHAINS_CMD} git --no-pager log --oneline HEAD..@{u}
     fi
 }
 
