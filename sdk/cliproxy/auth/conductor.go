@@ -590,16 +590,19 @@ func (m *Manager) executeMixedOnce(ctx context.Context, providers []string, req 
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
-		// Store account info in gin.Context for logging (instead of context chain)
 		accountType, accountInfo := auth.AccountInfo()
 		if accountInfo != "" {
 			accountInfoStr := fmt.Sprintf("%s:%s", accountType, accountInfo)
 			execCtx = context.WithValue(execCtx, AccountInfoContextKey, accountInfoStr)
-			// Also store in gin.Context so logger can access it outside the execution context chain
 			if ginCtx := ctx.Value("gin"); ginCtx != nil {
 				if c, ok := ginCtx.(*gin.Context); ok {
 					c.Set("cliproxy.account_info", accountInfoStr)
 				}
+			}
+		}
+		if ginCtx := ctx.Value("gin"); ginCtx != nil {
+			if c, ok := ginCtx.(*gin.Context); ok {
+				c.Set("cliproxy.provider", provider)
 			}
 		}
 		execReq := req
@@ -665,6 +668,11 @@ func (m *Manager) executeCountMixedOnce(ctx context.Context, providers []string,
 				}
 			}
 		}
+		if ginCtx := ctx.Value("gin"); ginCtx != nil {
+			if c, ok := ginCtx.(*gin.Context); ok {
+				c.Set("cliproxy.provider", provider)
+			}
+		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)
 		execReq.Model = m.applyOAuthModelAlias(auth, execReq.Model)
@@ -726,6 +734,11 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 				if c, ok := ginCtx.(*gin.Context); ok {
 					c.Set("cliproxy.account_info", accountInfoStr)
 				}
+			}
+		}
+		if ginCtx := ctx.Value("gin"); ginCtx != nil {
+			if c, ok := ginCtx.(*gin.Context); ok {
+				c.Set("cliproxy.provider", provider)
 			}
 		}
 		execReq := req
@@ -2054,6 +2067,9 @@ type roundTripperContextKey struct{}
 
 // AccountInfoContextKey is exported for use by logging middleware
 const AccountInfoContextKey = "cliproxy.account_info"
+
+// ProviderContextKey is exported for use by logging middleware
+const ProviderContextKey = "cliproxy.provider"
 
 // roundTripperFor retrieves an HTTP RoundTripper for the given auth if a provider is registered.
 func (m *Manager) roundTripperFor(auth *Auth) http.RoundTripper {

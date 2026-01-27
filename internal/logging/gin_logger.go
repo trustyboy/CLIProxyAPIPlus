@@ -57,14 +57,6 @@ func GinLogrusLogger() gin.HandlerFunc {
 
 		// Extract model name before processing the request
 		model := extractModelFromRequest(c)
-		// Get provider name from model
-		providers := util.GetProviderName(model)
-		provider := "unknown"
-
-		// Try to get more detailed provider/channel information
-		if len(providers) > 0 {
-			provider = providers[0]
-		}
 
 		c.Next()
 
@@ -96,6 +88,14 @@ func GinLogrusLogger() gin.HandlerFunc {
 			}
 		}
 
+		// Get actual provider from gin.Context (set by auth manager)
+		var provider string
+		if providerVal, exists := c.Get("cliproxy.provider"); exists {
+			if providerStr, ok := providerVal.(string); ok {
+				provider = providerStr
+			}
+		}
+
 		if requestID == "" {
 			requestID = "--------"
 		}
@@ -116,9 +116,17 @@ func GinLogrusLogger() gin.HandlerFunc {
 			"client_ip":  clientIP,
 			"method":     method,
 			"path":       path,
-			"provider":   provider,
-			"model":      model,
 		})
+
+		// Only add provider and model fields if model is not empty
+		if model != "" {
+			logEntry = logEntry.WithField("model", model)
+			if provider != "" {
+				logEntry = logEntry.WithField("provider", provider)
+				logLine += " | provider=" + provider
+			}
+			logLine += " | model=" + model
+		}
 
 		// Add account info to log if available
 		if accountInfo != "" {
