@@ -15,6 +15,49 @@ The Plus release stays in lockstep with the mainline features.
 
 ## New Features (Plus Enhanced)
 
+### Enhanced Logging
+
+**Detailed Request Logging**
+- Display request ID, model name, and provider information in logs
+- Record actual channel account information used
+- Support structured log output for easy log analysis
+
+**Log Format Example**
+```
+[2025-01-28 04:00:00] [info ] | a1b2c3d4 | 200 |       23.559s | 192.168.1.100 | POST | /v1/chat/completions | provider=gemini | model=gemini-pro | account=oauth:user@example.com
+```
+
+**Key Improvements**
+- Fixed channel display issue when multiple channels have the same model
+- Provider and model information are only shown when model is available
+- Reads actual provider from gin.Context instead of inferring from model name
+
+### Automated Build Script
+
+**build.sh Features**
+- Check git updates, automatically exit if no new commits
+- Automatically stop/start supervisor service
+- Support proxychains for pulling code
+- Inject version information into binary
+- Support `-f` parameter for forced builds
+
+**Usage**
+```bash
+# Normal mode (check for updates)
+./build.sh
+
+# Force build mode (skip update check)
+./build.sh -f
+```
+
+**Configuration Options**
+- `PROXY_CHAINS_CMD`: proxychains command (default: proxychains)
+- `SERVICE_NAME`: supervisor service name
+- `OUTPUT_NAME`: output file name
+- `OUTPUT_DIR`: output directory
+
+### Other Enhanced Features
+
 - **OAuth Web Authentication**: Browser-based OAuth login for Kiro with beautiful web UI
 - **Rate Limiter**: Built-in request rate limiting to prevent API abuse
 - **Background Token Refresh**: Automatic token refresh 10 minutes before expiration
@@ -40,9 +83,9 @@ This provides a browser-based OAuth flow for Kiro (AWS CodeWhisperer) authentica
 - AWS Identity Center (IDC) login
 - Token import from Kiro IDE
 
-## Quick Deployment with Docker
+## Quick Start
 
-### One-Command Deployment
+### Docker Deployment
 
 ```bash
 # Create deployment directory
@@ -66,8 +109,32 @@ EOF
 # Download example config
 curl -o config.yaml https://raw.githubusercontent.com/linlang781/CLIProxyAPIPlus/main/config.example.yaml
 
-# Pull and start
-docker compose pull && docker compose up -d
+# Start service
+docker compose up -d
+```
+
+### Source Code Deployment
+
+```bash
+# Clone repository
+git clone https://github.com/trustyboy/CLIProxyAPIPlus.git
+cd CLIProxyAPIPlus
+
+# Switch to gf branch (enhanced features branch)
+git checkout gf
+
+# Use automated build script
+./build.sh
+
+# Or build manually
+go build -o cli-proxy-api ./cmd/server
+
+# Configure config.yaml
+cp config.example.yaml config.yaml
+vim config.yaml
+
+# Start service
+./cli-proxy-api
 ```
 
 ### Configuration
@@ -87,6 +154,52 @@ server:
 ```bash
 cd ~/cli-proxy
 docker compose pull && docker compose up -d
+```
+
+## API Endpoints
+
+### OpenAI Compatible APIs
+
+- `POST /v1/chat/completions` - Chat completions
+- `POST /v1/completions` - Text completions
+- `GET /v1/models` - Model list
+
+### Gemini Compatible APIs
+
+- `POST /v1beta/models/{model}:generateContent` - Content generation
+- `GET /v1beta/models` - Model list
+
+### Claude Compatible APIs
+
+- `POST /v1/messages` - Messages API
+- `GET /v1/models` - Model list
+
+## Logging
+
+### Log Levels
+
+- `INFO` - Normal requests
+- `WARN` - 4xx errors
+- `ERROR` - 5xx errors
+
+### Log Fields
+
+- `request_id` - Request ID (for AI API requests)
+- `status` - HTTP status code
+- `latency` - Request duration
+- `client_ip` - Client IP address
+- `method` - HTTP method
+- `path` - Request path
+- `provider` - Provider (shown when model is available)
+- `model` - Model name (shown when model is available)
+- `account` - Channel account (shown when account info is available)
+- `error` - Error message (shown when error occurs)
+
+## Version Information
+
+Check version:
+```bash
+./cli-proxy-api -version
 ```
 
 ## Contributing

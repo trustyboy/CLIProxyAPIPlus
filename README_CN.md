@@ -15,6 +15,43 @@
 
 ## 新增功能 (Plus 增强版)
 
+### 1. 日志增强
+
+**详细的请求日志记录**
+- 在日志中显示请求 ID、模型名称、提供商信息
+- 记录实际使用的渠道商账号信息
+- 支持结构化日志输出，便于日志分析
+
+**日志格式示例**
+```
+[2025-01-28 04:00:00] [info ] | a1b2c3d4 | 200 |       23.559s | 192.168.1.100 | POST | /v1/chat/completions | provider=gemini | model=gemini-pro | account=oauth:user@example.com
+```
+
+**关键改进**
+- 修复多个渠道有相同模型时的渠道显示问题
+- 当无法获取模型时，不显示提供商和模型信息
+- 从 gin.Context 读取实际使用的提供商，而非从模型名推断
+
+### 2. 自动构建脚本
+
+**build.sh 功能**
+- 检查 git 更新，无新提交时自动退出
+- 自动停止/启动 supervisor 服务
+- 支持 proxychains 代理拉取代码
+- 注入版本信息到二进制文件
+- 支持 `-f` 参数强制构建
+
+**使用方法**
+```bash
+# 正常模式（检查更新）
+./build.sh
+
+# 强制构建模式（跳过更新检查）
+./build.sh -f
+```
+
+### 3. 其他增强功能
+
 - **OAuth Web 认证**: 基于浏览器的 Kiro OAuth 登录，提供美观的 Web UI
 - **请求限流器**: 内置请求限流，防止 API 滥用
 - **后台令牌刷新**: 过期前 10 分钟自动刷新令牌
@@ -40,9 +77,9 @@ http://your-server:8080/v0/oauth/kiro
 - AWS Identity Center (IDC) 登录
 - 从 Kiro IDE 导入令牌
 
-## Docker 快速部署
+## 快速开始
 
-### 一键部署
+### 使用 Docker 部署
 
 ```bash
 # 创建部署目录
@@ -66,8 +103,32 @@ EOF
 # 下载示例配置
 curl -o config.yaml https://raw.githubusercontent.com/linlang781/CLIProxyAPIPlus/main/config.example.yaml
 
-# 拉取并启动
-docker compose pull && docker compose up -d
+# 启动服务
+docker compose up -d
+```
+
+### 使用源码部署
+
+```bash
+# 克隆仓库
+git clone https://github.com/trustyboy/CLIProxyAPIPlus.git
+cd CLIProxyAPIPlus
+
+# 切换到 gf 分支（增强功能分支）
+git checkout gf
+
+# 使用自动构建脚本
+./build.sh
+
+# 或手动编译
+go build -o cli-proxy-api ./cmd/server
+
+# 配置 config.yaml
+cp config.example.yaml config.yaml
+vim config.yaml
+
+# 启动服务
+./cli-proxy-api
 ```
 
 ### 配置说明
@@ -87,6 +148,52 @@ server:
 ```bash
 cd ~/cli-proxy
 docker compose pull && docker compose up -d
+```
+
+## API 接口
+
+### OpenAI 兼容接口
+
+- `POST /v1/chat/completions` - 聊天补全
+- `POST /v1/completions` - 文本补全
+- `GET /v1/models` - 模型列表
+
+### Gemini 兼容接口
+
+- `POST /v1beta/models/{model}:generateContent` - 内容生成
+- `GET /v1beta/models` - 模型列表
+
+### Claude 兼容接口
+
+- `POST /v1/messages` - 消息接口
+- `GET /v1/models` - 模型列表
+
+## 日志说明
+
+### 日志级别
+
+- `INFO` - 正常请求
+- `WARN` - 4xx 错误
+- `ERROR` - 5xx 错误
+
+### 日志字段
+
+- `request_id` - 请求 ID（AI API 请求）
+- `status` - HTTP 状态码
+- `latency` - 请求耗时
+- `client_ip` - 客户端 IP
+- `method` - HTTP 方法
+- `path` - 请求路径
+- `provider` - 提供商（有模型时显示）
+- `model` - 模型名称（有模型时显示）
+- `account` - 渠道商账号（有账号信息时显示）
+- `error` - 错误信息（有错误时显示）
+
+## 版本信息
+
+查看版本：
+```bash
+./cli-proxy-api -version
 ```
 
 ## 贡献
