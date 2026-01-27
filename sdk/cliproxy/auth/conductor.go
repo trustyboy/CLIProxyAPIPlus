@@ -15,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	internalconfig "github.com/router-for-me/CLIProxyAPI/v6/internal/config"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/logging"
@@ -589,10 +590,17 @@ func (m *Manager) executeMixedOnce(ctx context.Context, providers []string, req 
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
-		// Store account info in context for logging
+		// Store account info in gin.Context for logging (instead of context chain)
 		accountType, accountInfo := auth.AccountInfo()
 		if accountInfo != "" {
-			execCtx = context.WithValue(execCtx, AccountInfoContextKey, fmt.Sprintf("%s:%s", accountType, accountInfo))
+			accountInfoStr := fmt.Sprintf("%s:%s", accountType, accountInfo)
+			execCtx = context.WithValue(execCtx, AccountInfoContextKey, accountInfoStr)
+			// Also store in gin.Context so logger can access it outside the execution context chain
+			if ginCtx := ctx.Value("gin"); ginCtx != nil {
+				if c, ok := ginCtx.(*gin.Context); ok {
+					c.Set("cliproxy.account_info", accountInfoStr)
+				}
+			}
 		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)
@@ -647,10 +655,15 @@ func (m *Manager) executeCountMixedOnce(ctx context.Context, providers []string,
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
-		// Store account info in context for logging
 		accountType, accountInfo := auth.AccountInfo()
 		if accountInfo != "" {
-			execCtx = context.WithValue(execCtx, AccountInfoContextKey, fmt.Sprintf("%s:%s", accountType, accountInfo))
+			accountInfoStr := fmt.Sprintf("%s:%s", accountType, accountInfo)
+			execCtx = context.WithValue(execCtx, AccountInfoContextKey, accountInfoStr)
+			if ginCtx := ctx.Value("gin"); ginCtx != nil {
+				if c, ok := ginCtx.(*gin.Context); ok {
+					c.Set("cliproxy.account_info", accountInfoStr)
+				}
+			}
 		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)
@@ -705,10 +718,15 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 			execCtx = context.WithValue(execCtx, roundTripperContextKey{}, rt)
 			execCtx = context.WithValue(execCtx, "cliproxy.roundtripper", rt)
 		}
-		// Store account info in context for logging
 		accountType, accountInfo := auth.AccountInfo()
 		if accountInfo != "" {
-			execCtx = context.WithValue(execCtx, AccountInfoContextKey, fmt.Sprintf("%s:%s", accountType, accountInfo))
+			accountInfoStr := fmt.Sprintf("%s:%s", accountType, accountInfo)
+			execCtx = context.WithValue(execCtx, AccountInfoContextKey, accountInfoStr)
+			if ginCtx := ctx.Value("gin"); ginCtx != nil {
+				if c, ok := ginCtx.(*gin.Context); ok {
+					c.Set("cliproxy.account_info", accountInfoStr)
+				}
+			}
 		}
 		execReq := req
 		execReq.Model = rewriteModelForAuth(routeModel, auth)

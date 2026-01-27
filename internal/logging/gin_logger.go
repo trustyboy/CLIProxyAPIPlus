@@ -88,9 +88,9 @@ func GinLogrusLogger() gin.HandlerFunc {
 		method := c.Request.Method
 		errorMessage := c.Errors.ByType(gin.ErrorTypePrivate).String()
 
-		// Get account info from context if available
+		// Get account info from gin.Context if available
 		var accountInfo string
-		if accountVal := c.Request.Context().Value("cliproxy.account_info"); accountVal != nil {
+		if accountVal, exists := c.Get("cliproxy.account_info"); exists {
 			if accountStr, ok := accountVal.(string); ok {
 				accountInfo = accountStr
 			}
