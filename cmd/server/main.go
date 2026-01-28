@@ -533,7 +533,6 @@ func main() {
 			return
 		}
 		// Start the main proxy service
-		managementasset.StartAutoUpdater(context.Background(), configFilePath)
 
 		// 初始化并启动 Kiro token 后台刷新
 		if cfg.AuthDir != "" {

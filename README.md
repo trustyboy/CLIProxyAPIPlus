@@ -32,6 +32,27 @@ The Plus release stays in lockstep with the mainline features.
 - Provider and model information are only shown when model is available
 - Reads actual provider from gin.Context instead of inferring from model name
 
+### Embedded Management UI
+
+**Self-contained Dashboard**
+- Management UI is now embedded directly into the binary
+- No network download required for the dashboard
+- Offline deployment support
+- Faster startup with instant UI availability
+- Version consistency between UI and backend
+
+**Access the Dashboard**
+```
+http://your-server:8317/management.html
+```
+
+**Key Benefits**
+- Zero network dependency - works offline
+- Faster startup - no download wait time
+- Enhanced security - no MITM attack risk during download
+- Version consistency - UI and backend are always in sync
+- Simplified deployment - single binary contains everything
+
 ### Automated Build Script
 
 **build.sh Features**
@@ -40,6 +61,9 @@ The Plus release stays in lockstep with the mainline features.
 - Support proxychains for pulling code
 - Inject version information into binary
 - Support `-f` parameter for forced builds
+- **NEW**: Automatically build and embed React frontend
+- **NEW**: Auto-install npm dependencies on first build
+- **NEW**: Validate embedded HTML file
 
 **Usage**
 ```bash
@@ -50,6 +74,23 @@ The Plus release stays in lockstep with the mainline features.
 ./build.sh -f
 ```
 
+**Build Process**
+```
+1. Check git updates
+   ↓
+2. Stop service
+   ↓
+3. Pull code
+   ↓
+4. Build Web frontend (npm run build)
+   ↓
+5. Copy to embed directory
+   ↓
+6. Compile Go binary
+   ↓
+7. Start service
+```
+
 **Configuration Options**
 - `PROXY_CHAINS_CMD`: proxychains command (default: proxychains)
 - `SERVICE_NAME`: supervisor service name
@@ -58,6 +99,7 @@ The Plus release stays in lockstep with the mainline features.
 
 ### Other Enhanced Features
 
+- **Embedded Management UI**: Self-contained dashboard embedded in binary (no download required)
 - **OAuth Web Authentication**: Browser-based OAuth login for Kiro with beautiful web UI
 - **Rate Limiter**: Built-in request rate limiting to prevent API abuse
 - **Background Token Refresh**: Automatic token refresh 10 minutes before expiration
@@ -67,6 +109,7 @@ The Plus release stays in lockstep with the mainline features.
 - **Usage Checker**: Real-time usage monitoring and quota management
 - **Model Converter**: Unified model name conversion across providers
 - **UTF-8 Stream Processing**: Improved streaming response handling
+- **Auth File Persistence**: Fixed disabled state persistence across restarts
 
 ## Kiro Authentication
 

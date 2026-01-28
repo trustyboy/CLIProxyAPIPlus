@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # build.sh - 自动构建脚本
-# 检查git更新 -> 停止服务 -> 拉取代码 -> 编译 -> 启动服务
+# 检查git更新 -> 停止服务 -> 拉取代码 -> 构建Web前端 -> 编译 -> 启动服务
 # 使用 -f 参数强制构建，跳过更新检查
 
 set -euo pipefail  # 严格模式：出错即止
@@ -51,6 +51,51 @@ pull_code() {
     echo "[INFO] 拉取最新代码..."
     ${PROXY_CHAINS_CMD} git pull origin HEAD
     echo "[INFO] 代码已更新"
+}
+
+# 构建Web前端
+build_web() {
+    echo "[INFO] 开始构建Web前端..."
+
+    # 检查 web 目录是否存在
+    if [[ ! -d "web" ]]; then
+        echo "[ERROR] web 目录不存在"
+        exit 1
+    fi
+
+    # 检查 node_modules 是否存在
+    if [[ ! -d "web/node_modules" ]]; then
+        echo "[INFO] 首次构建，安装依赖..."
+        cd web
+        npm install
+        cd ..
+    fi
+
+    # 构建 Web 前端
+    cd web
+    npm run build
+    cd ..
+
+    # 检查构建结果
+    if [[ ! -f "web/dist/index.html" ]]; then
+        echo "[ERROR] Web 构建失败：web/dist/index.html 不存在"
+        exit 1
+    fi
+
+    # 复制到嵌入目录
+    echo "[INFO] 复制 Web 构建结果到嵌入目录..."
+    mkdir -p internal/managementasset/embedded
+    cp web/dist/index.html internal/managementasset/embedded/management.html
+
+    # 验证嵌入文件
+    if [[ ! -f "internal/managementasset/embedded/management.html" ]]; then
+        echo "[ERROR] 嵌入文件复制失败"
+        exit 1
+    fi
+
+    EMBED_SIZE=$(du -h internal/managementasset/embedded/management.html | cut -f1)
+    echo "[INFO] Web 构建完成 🎉"
+    echo "[INFO] 嵌入文件大小: ${EMBED_SIZE}"
 }
 
 # 编译
@@ -121,16 +166,21 @@ main() {
     # 3. 拉取代码
     pull_code
 
-    # 4. 编译
+    # 4. 构建Web前端
+    build_web
+
+    # 5. 编译
     build_binary
 
-    # 5. 启动服务
+    # 6. 启动服务
     start_service
 
     echo ""
     echo "========================================"
     echo "  构建和部署完成！"
     echo "========================================"
+    echo "[INFO] 二进制文件: ${OUTPUT_DIR}/${OUTPUT_NAME}"
+    echo "[INFO] 嵌入Web: internal/managementasset/embedded/management.html"
 }
 
 # 执行主流程

@@ -670,25 +670,12 @@ func (s *Server) serveManagementControlPanel(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	filePath := managementasset.FilePath(s.configFilePath)
-	if strings.TrimSpace(filePath) == "" {
-		c.AbortWithStatus(http.StatusNotFound)
-		return
-	}
 
-	if _, err := os.Stat(filePath); err != nil {
-		if os.IsNotExist(err) {
-			go managementasset.EnsureLatestManagementHTML(context.Background(), managementasset.StaticDir(s.configFilePath), cfg.ProxyURL, cfg.RemoteManagement.PanelGitHubRepository)
-			c.AbortWithStatus(http.StatusNotFound)
-			return
-		}
-
-		log.WithError(err).Error("failed to stat management control panel asset")
+	if err := managementasset.ServeEmbeddedManagementHTML(c.Writer); err != nil {
+		log.WithError(err).Error("failed to serve embedded management control panel")
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
-
-	c.File(filePath)
 }
 
 func (s *Server) enableKeepAlive(timeout time.Duration, onTimeout func()) {

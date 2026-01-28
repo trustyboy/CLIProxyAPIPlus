@@ -1697,7 +1697,7 @@ func (m *Manager) pickNextMixed(ctx context.Context, providers []string, model s
 }
 
 func (m *Manager) persist(ctx context.Context, auth *Auth) error {
-	if m.store == nil || auth == nil {
+	if auth == nil {
 		return nil
 	}
 	if shouldSkipPersist(ctx) {
@@ -1708,9 +1708,8 @@ func (m *Manager) persist(ctx context.Context, auth *Auth) error {
 			return nil
 		}
 	}
-	// Skip persistence when metadata is absent (e.g., runtime-only auths).
 	if auth.Metadata == nil {
-		return nil
+		auth.Metadata = make(map[string]any)
 	}
 	_, err := m.store.Save(ctx, auth)
 	return err
