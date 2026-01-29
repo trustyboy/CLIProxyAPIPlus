@@ -49,12 +49,6 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 		return "", fmt.Errorf("auth filestore: missing file path attribute for %s", auth.ID)
 	}
 
-	if auth.Disabled {
-		if _, statErr := os.Stat(path); os.IsNotExist(statErr) {
-			return "", nil
-		}
-	}
-
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -67,7 +61,18 @@ func (s *FileTokenStore) Save(ctx context.Context, auth *cliproxyauth.Auth) (str
 		if err = auth.Storage.SaveTokenToFile(path); err != nil {
 			return "", err
 		}
+		// After saving storage, merge metadata (like disabled state) into the file
+		if auth.Metadata != nil && len(auth.Metadata) > 0 {
+			if err = s.mergeMetadataIntoFile(path, auth); err != nil {
+				return "", fmt.Errorf("auth filestore: merge metadata failed: %w", err)
+			}
+		}
 	case auth.Metadata != nil:
+		// Persist Disabled state to metadata
+		if auth.Metadata == nil {
+			auth.Metadata = make(map[string]any)
+		}
+		auth.Metadata["disabled"] = auth.Disabled
 		raw, errMarshal := json.Marshal(auth.Metadata)
 		if errMarshal != nil {
 			return "", fmt.Errorf("auth filestore: marshal metadata failed: %w", errMarshal)
@@ -236,6 +241,12 @@ func (s *FileTokenStore) readAuthFile(path, baseDir string) (*cliproxyauth.Auth,
 		LastRefreshedAt:  time.Time{},
 		NextRefreshAfter: nextRefreshAfter,
 	}
+
+	// Restore Disabled state from metadata
+	if disabled, ok := metadata["disabled"].(bool); ok && disabled {
+		auth.Status = cliproxyauth.StatusDisabled
+		auth.Disabled = true
+	}
 	if email, ok := metadata["email"].(string); ok && email != "" {
 		auth.Attributes["email"] = email
 	}
@@ -367,4 +378,41 @@ func deepEqualJSON(a, b any) bool {
 	default:
 		return false
 	}
+}
+
+// mergeMetadataIntoFile merges metadata fields (like disabled state) into an existing auth file.
+// This is called after Storage.SaveTokenToFile to ensure metadata is persisted.
+func (s *FileTokenStore) mergeMetadataIntoFile(path string, auth *cliproxyauth.Auth) error {
+	if auth.Metadata == nil || len(auth.Metadata) == 0 {
+		return nil
+	}
+
+	// Read the existing file
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read file for metadata merge: %w", err)
+	}
+
+	// Parse existing JSON
+	var existing map[string]any
+	if err = json.Unmarshal(data, &existing); err != nil {
+		return fmt.Errorf("parse existing JSON for metadata merge: %w", err)
+	}
+
+	// Merge metadata fields
+	for key, value := range auth.Metadata {
+		existing[key] = value
+	}
+
+	// Write back to file
+	merged, err := json.Marshal(existing)
+	if err != nil {
+		return fmt.Errorf("marshal merged JSON: %w", err)
+	}
+
+	if err = os.WriteFile(path, merged, 0o600); err != nil {
+		return fmt.Errorf("write merged JSON: %w", err)
+	}
+
+	return nil
 }

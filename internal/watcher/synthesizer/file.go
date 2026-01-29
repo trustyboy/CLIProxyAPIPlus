@@ -86,12 +86,21 @@ func (s *FileSynthesizer) Synthesize(ctx *SynthesisContext) ([]*coreauth.Auth, e
 			}
 		}
 
+		// Check if auth is disabled from metadata
+		status := coreauth.StatusActive
+		disabled := false
+		if d, ok := metadata["disabled"].(bool); ok && d {
+			status = coreauth.StatusDisabled
+			disabled = true
+		}
+
 		a := &coreauth.Auth{
 			ID:       id,
 			Provider: provider,
 			Label:    label,
 			Prefix:   prefix,
-			Status:   coreauth.StatusActive,
+			Status:   status,
+			Disabled: disabled,
 			Attributes: map[string]string{
 				"source": full,
 				"path":   full,
