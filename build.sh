@@ -17,10 +17,17 @@ OUTPUT_DIR="."
 # 检查git是否有新提交
 check_git_updates() {
     echo "[INFO] 检查git更新..."
-    ${PROXY_CHAINS_CMD} git fetch origin
+    # 只有 fetch 需要网络请求，使用 proxychains
+    if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
+        ${PROXY_CHAINS_CMD} git fetch origin
+    else
+        echo "[WARN] ${PROXY_CHAINS_CMD} 未找到，直接使用git命令"
+        git fetch origin
+    fi
 
-    LOCAL_COMMIT=$(${PROXY_CHAINS_CMD} git rev-parse HEAD)
-    REMOTE_COMMIT=$(${PROXY_CHAINS_CMD} git rev-parse @{u})
+    # 本地git命令不需要proxychains
+    LOCAL_COMMIT=$(git rev-parse HEAD)
+    REMOTE_COMMIT=$(git rev-parse @{u})
 
     if [[ "${LOCAL_COMMIT}" == "${REMOTE_COMMIT}" ]]; then
         echo "[INFO] 没有新的提交，无需构建"
@@ -31,7 +38,7 @@ check_git_updates() {
         echo "[INFO] 本地提交: ${LOCAL_COMMIT}"
         echo "[INFO] 远程提交: ${REMOTE_COMMIT}"
         echo "[INFO] 提交差异:"
-        ${PROXY_CHAINS_CMD} git --no-pager log --oneline HEAD..@{u}
+        git --no-pager log --oneline HEAD..@{u}
     fi
 }
 
@@ -49,7 +56,13 @@ stop_service() {
 # 拉取代码
 pull_code() {
     echo "[INFO] 拉取最新代码..."
-    ${PROXY_CHAINS_CMD} git pull origin HEAD
+    # pull 需要网络请求，使用 proxychains
+    if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
+        ${PROXY_CHAINS_CMD} git pull origin HEAD
+    else
+        echo "[WARN] ${PROXY_CHAINS_CMD} 未找到，直接使用git命令"
+        git pull origin HEAD
+    fi
     echo "[INFO] 代码已更新"
 }
 
@@ -103,8 +116,9 @@ build_binary() {
     echo "[INFO] 开始编译..."
 
     # ------------------- 读取 Git 信息 -------------------
-    VERSION="$(${PROXY_CHAINS_CMD} git describe --tags --always --dirty)"
-    COMMIT="$(${PROXY_CHAINS_CMD} git rev-parse --short HEAD)"
+    # 本地git命令不需要proxychains
+    VERSION="$(git describe --tags --always --dirty)"
+    COMMIT="$(git rev-parse --short HEAD)"
     BUILD_DATE="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
     # ------------------- LDFLAGS（注入版本信息） -------------------
@@ -142,10 +156,26 @@ start_service() {
 # ------------------- 主流程 -------------------
 main() {
     # 检查命令行参数
+    UPDATE_MODE=false
     FORCE_BUILD=false
-    if [[ "${1:-}" == "-f" ]]; then
-        FORCE_BUILD=true
-        echo "[INFO] 强制构建模式 (-f)，跳过更新检查"
+
+    # 检查是否包含 update 参数
+    for arg in "$@"; do
+        if [[ "$arg" == "update" ]]; then
+            UPDATE_MODE=true
+        elif [[ "$arg" == "-f" ]]; then
+            FORCE_BUILD=true
+        fi
+    done
+
+    if [[ "${UPDATE_MODE}" == true ]]; then
+        if [[ "${FORCE_BUILD}" == true ]]; then
+            echo "[INFO] 更新模式 + 强制构建 (-f)，跳过更新检查"
+        else
+            echo "[INFO] 更新模式，执行完整更新流程"
+        fi
+    else
+        echo "[INFO] 构建模式，仅执行构建操作"
     fi
 
     echo "========================================"
@@ -153,18 +183,23 @@ main() {
     echo "========================================"
     echo ""
 
-    # 1. 检查git是否有新提交（除非强制构建）
-    if [[ "${FORCE_BUILD}" == false ]]; then
-        check_git_updates
+    # 只在更新模式下执行以下步骤
+    if [[ "${UPDATE_MODE}" == true ]]; then
+        # 1. 检查git是否有新提交（除非强制构建）
+        if [[ "${FORCE_BUILD}" == true ]]; then
+            echo "[INFO] 强制构建模式，跳过更新检查"
+        else
+            check_git_updates
+        fi
+
+        # 2. 停止服务
+        stop_service
+
+        # 3. 拉取代码
+        pull_code
     else
-        echo "[INFO] 跳过更新检查，直接构建"
+        echo "[INFO] 构建模式，跳过更新检查"
     fi
-
-    # 2. 停止服务
-    stop_service
-
-    # 3. 拉取代码
-    pull_code
 
     # 4. 构建Web前端
     build_web
@@ -172,8 +207,11 @@ main() {
     # 5. 编译
     build_binary
 
-    # 6. 启动服务
-    start_service
+    # 只在更新模式下启动服务
+    if [[ "${UPDATE_MODE}" == true ]]; then
+        # 6. 启动服务
+        start_service
+    fi
 
     echo ""
     echo "========================================"
