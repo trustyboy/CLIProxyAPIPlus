@@ -138,7 +138,7 @@ mkdir -p ~/cli-proxy && cd ~/cli-proxy
 cat > docker-compose.yml << 'EOF'
 services:
   cli-proxy-api:
-    image: 17600006524/cli-proxy-api-plus:latest
+    image: eceasy/cli-proxy-api-plus:latest
     container_name: cli-proxy-api-plus
     ports:
       - "8317:8317"
@@ -150,7 +150,7 @@ services:
 EOF
 
 # Download example config
-curl -o config.yaml https://raw.githubusercontent.com/linlang781/CLIProxyAPIPlus/main/config.example.yaml
+curl -o config.yaml https://raw.githubusercontent.com/router-for-me/CLIProxyAPIPlus/main/config.example.yaml
 
 # Start service
 docker compose up -d
@@ -249,7 +249,7 @@ Check version:
 
 This project only accepts pull requests that relate to third-party provider support. Any pull requests unrelated to third-party provider support will be rejected.
 
-If you need to submit any non-third-party provider changes, please open them against the mainline repository.
+If you need to submit any non-third-party provider changes, please open them against the [mainline](https://github.com/router-for-me/CLIProxyAPI) repository.
 
 ## License
 
