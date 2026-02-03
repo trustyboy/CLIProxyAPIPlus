@@ -56,6 +56,17 @@ stop_service() {
 # 拉取代码
 pull_code() {
     echo "[INFO] 拉取最新代码..."
+
+    # 检查是否有已跟踪文件的本地修改（排除未跟踪文件）
+    TRACKED_CHANGES=$(git diff --name-only HEAD)
+    if [[ -n "${TRACKED_CHANGES}" ]]; then
+        echo "[WARN] 检测到已跟踪文件有修改，放弃本地修改..."
+        echo "[INFO] 修改的文件:"
+        echo "${TRACKED_CHANGES}" | sed 's/^/  - /'
+        git reset --hard HEAD
+        echo "[INFO] 本地修改已重置"
+    fi
+
     # pull 需要网络请求，使用 proxychains
     if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
         ${PROXY_CHAINS_CMD} git pull origin HEAD
