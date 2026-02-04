@@ -69,12 +69,20 @@ pull_code() {
 
     # pull 需要网络请求，使用 proxychains
     if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
-        ${PROXY_CHAINS_CMD} git pull origin HEAD
+        ${PROXY_CHAINS_CMD} git pull --no-rebase origin HEAD
     else
         echo "[WARN] ${PROXY_CHAINS_CMD} 未找到，直接使用git命令"
-        git pull origin HEAD
+        git pull --no-rebase origin HEAD
     fi
     echo "[INFO] 代码已更新"
+
+    echo "[INFO] 更新子模块..."
+    if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
+        ${PROXY_CHAINS_CMD} git submodule update --remote --recursive
+    else
+        git submodule update --remote --recursive
+    fi
+    echo "[INFO] 子模块已更新"
 }
 
 # 构建Web前端
