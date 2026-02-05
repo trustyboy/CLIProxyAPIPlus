@@ -7,7 +7,6 @@
 set -euo pipefail  # 严格模式：出错即止
 
 # ------------------- 配置 -------------------
-PROXY_CHAINS_CMD="proxychains"  # proxychains命令，可根据需要改为 proxychains4
 SERVICE_NAME="cli-proxy-api:cli-proxy-api_00"
 OUTPUT_NAME="cli-proxy-api"
 OUTPUT_DIR="."
@@ -17,15 +16,8 @@ OUTPUT_DIR="."
 # 检查git是否有新提交
 check_git_updates() {
     echo "[INFO] 检查git更新..."
-    # 只有 fetch 需要网络请求，使用 proxychains
-    if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
-        ${PROXY_CHAINS_CMD} git fetch origin
-    else
-        echo "[WARN] ${PROXY_CHAINS_CMD} 未找到，直接使用git命令"
-        git fetch origin
-    fi
+    git fetch origin
 
-    # 本地git命令不需要proxychains
     LOCAL_COMMIT=$(git rev-parse HEAD)
     REMOTE_COMMIT=$(git rev-parse @{u})
 
@@ -59,11 +51,7 @@ pull_code() {
     echo "[INFO] 强制以远程代码为准，放弃本地修改和提交，但保留未跟踪文件"
 
     # 获取远程最新状态
-    if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
-        ${PROXY_CHAINS_CMD} git fetch origin
-    else
-        git fetch origin
-    fi
+    git fetch origin
 
     # 强制重置到远程分支状态（保留未跟踪文件）
     git reset --hard origin/HEAD
@@ -71,11 +59,7 @@ pull_code() {
 
     # 更新子模块
     echo "[INFO] 更新子模块..."
-    if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
-        ${PROXY_CHAINS_CMD} git submodule update --remote --recursive
-    else
-        git submodule update --remote --recursive
-    fi
+    git submodule update --remote --recursive
     echo "[INFO] 子模块已更新"
 }
 
