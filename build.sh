@@ -53,29 +53,23 @@ stop_service() {
     fi
 }
 
-# 拉取代码
+# 拉取代码 - 强制以远程为准，但保留未跟踪文件
 pull_code() {
     echo "[INFO] 拉取最新代码..."
+    echo "[INFO] 强制以远程代码为准，放弃本地修改和提交，但保留未跟踪文件"
 
-    # 检查是否有已跟踪文件的本地修改（排除未跟踪文件）
-    TRACKED_CHANGES=$(git diff --name-only HEAD)
-    if [[ -n "${TRACKED_CHANGES}" ]]; then
-        echo "[WARN] 检测到已跟踪文件有修改，放弃本地修改..."
-        echo "[INFO] 修改的文件:"
-        echo "${TRACKED_CHANGES}" | sed 's/^/  - /'
-        git reset --hard HEAD
-        echo "[INFO] 本地修改已重置"
-    fi
-
-    # pull 需要网络请求，使用 proxychains
+    # 获取远程最新状态
     if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
-        ${PROXY_CHAINS_CMD} git pull --no-rebase origin HEAD
+        ${PROXY_CHAINS_CMD} git fetch origin
     else
-        echo "[WARN] ${PROXY_CHAINS_CMD} 未找到，直接使用git命令"
-        git pull --no-rebase origin HEAD
+        git fetch origin
     fi
-    echo "[INFO] 代码已更新"
 
+    # 强制重置到远程分支状态（保留未跟踪文件）
+    git reset --hard origin/HEAD
+    echo "[INFO] 已强制重置到远程分支状态，未跟踪文件已保留"
+
+    # 更新子模块
     echo "[INFO] 更新子模块..."
     if command -v ${PROXY_CHAINS_CMD} &> /dev/null; then
         ${PROXY_CHAINS_CMD} git submodule update --remote --recursive
