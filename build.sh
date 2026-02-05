@@ -48,7 +48,17 @@ stop_service() {
 # 拉取代码 - 强制以远程为准，但保留未跟踪文件
 pull_code() {
     echo "[INFO] 拉取最新代码..."
-    echo "[INFO] 强制以远程代码为准，放弃本地修改和提交，但保留未跟踪文件"
+
+    # 先检查是否有新的提交
+    LOCAL_COMMIT=$(git rev-parse HEAD)
+    REMOTE_COMMIT=$(git rev-parse @{u})
+
+    if [[ "${LOCAL_COMMIT}" == "${REMOTE_COMMIT}" ]]; then
+        echo "[INFO] 本地已是最新，无需拉取代码"
+        return
+    fi
+
+    echo "[INFO] 检测到远程有新的提交，强制以远程代码为准，放弃本地修改和提交，但保留未跟踪文件"
 
     # 获取远程最新状态
     git fetch origin
@@ -57,9 +67,9 @@ pull_code() {
     git reset --hard origin/HEAD
     echo "[INFO] 已强制重置到远程分支状态，未跟踪文件已保留"
 
-    # 更新子模块
+    # 更新子模块（使用--force处理目录不为空的情况）
     echo "[INFO] 更新子模块..."
-    git submodule update --remote --recursive
+    git submodule update --remote --recursive --force
     echo "[INFO] 子模块已更新"
 }
 
