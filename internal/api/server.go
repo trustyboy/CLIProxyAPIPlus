@@ -676,7 +676,6 @@ func (s *Server) serveManagementControlPanel(c *gin.Context) {
 		return
 	}
 
-<<<<<<< HEAD
 	if err := managementasset.ServeEmbeddedManagementHTML(c.Writer); err != nil {
 		log.WithError(err).Error("failed to serve embedded management control panel")
 		c.AbortWithStatus(http.StatusInternalServerError)
