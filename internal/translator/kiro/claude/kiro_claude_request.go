@@ -608,18 +608,22 @@ func processMessages(messages gjson.Result, modelID, origin string) ([]KiroHisto
 
 		if role == "user" {
 			userMsg, toolResults := BuildUserMessageStruct(msg, modelID, origin)
+			// CRITICAL: Kiro API requires content to be non-empty for ALL user messages
+			// This includes both history messages and the current message.
+			// When user message contains only tool_result (no text), content will be empty.
+			// This commonly happens in compaction requests from OpenCode.
+			if strings.TrimSpace(userMsg.Content) == "" {
+				if len(toolResults) > 0 {
+					userMsg.Content = kirocommon.DefaultUserContentWithToolResults
+				} else {
+					userMsg.Content = kirocommon.DefaultUserContent
+				}
+				log.Debugf("kiro: user content was empty, using default: %s", userMsg.Content)
+			}
 			if isLastMessage {
 				currentUserMsg = &userMsg
 				currentToolResults = toolResults
 			} else {
-				// CRITICAL: Kiro API requires content to be non-empty for history messages too
-				if strings.TrimSpace(userMsg.Content) == "" {
-					if len(toolResults) > 0 {
-						userMsg.Content = "Tool results provided."
-					} else {
-						userMsg.Content = "Continue"
-					}
-				}
 				// For history messages, embed tool results in context
 				if len(toolResults) > 0 {
 					userMsg.UserInputMessageContext = &KiroUserInputMessageContext{
@@ -883,8 +887,21 @@ func BuildAssistantMessageStruct(msg gjson.Result) KiroAssistantResponseMessage 
 		contentBuilder.WriteString(content.String())
 	}
 
+	// CRITICAL FIX: Kiro API requires non-empty content for assistant messages
+	// This can happen with compaction requests where assistant messages have only tool_use
+	// (no text content). Without this fix, Kiro API returns "Improperly formed request" error.
+	finalContent := contentBuilder.String()
+	if strings.TrimSpace(finalContent) == "" {
+		if len(toolUses) > 0 {
+			finalContent = kirocommon.DefaultAssistantContentWithTools
+		} else {
+			finalContent = kirocommon.DefaultAssistantContent
+		}
+		log.Debugf("kiro: assistant content was empty, using default: %s", finalContent)
+	}
+
 	return KiroAssistantResponseMessage{
-		Content:  contentBuilder.String(),
+		Content:  finalContent,
 		ToolUses: toolUses,
 	}
 }
