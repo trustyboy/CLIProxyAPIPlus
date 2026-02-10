@@ -245,6 +245,10 @@ docker compose pull && docker compose up -d
 
 如果需要提交任何非第三方供应商支持的 Pull Request，请提交到[主线](https://github.com/router-for-me/CLIProxyAPI)版本。
 
+## 更新日志
+
+详细的变更历史和技术实现细节，请参阅 [CHANGELOG.md](CHANGELOG.md)。
+
 ## 许可证
 
 此项目根据 MIT 许可证授权 - 有关详细信息，请参阅 [LICENSE](LICENSE) 文件。

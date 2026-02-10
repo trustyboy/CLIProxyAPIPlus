@@ -251,6 +251,10 @@ This project only accepts pull requests that relate to third-party provider supp
 
 If you need to submit any non-third-party provider changes, please open them against the [mainline](https://github.com/router-for-me/CLIProxyAPI) repository.
 
+## Changelog
+
+For detailed change history and technical implementation details, see [CHANGELOG.md](CHANGELOG.md).
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
