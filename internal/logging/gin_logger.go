@@ -56,7 +56,17 @@ func GinLogrusLogger() gin.HandlerFunc {
 		}
 
 		// Extract model name before processing the request
-		model := extractModelFromRequest(c)
+		// First try to get model from gin.Context (set by auth manager)
+		model := ""
+		if modelVal, exists := c.Get("cliproxy.model"); exists {
+			if modelStr, ok := modelVal.(string); ok {
+				model = modelStr
+			}
+		}
+		// Fallback to extraction from request body
+		if model == "" {
+			model = extractModelFromRequest(c)
+		}
 
 		c.Next()
 

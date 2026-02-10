@@ -597,12 +597,16 @@ func (m *Manager) executeMixedOnce(ctx context.Context, providers []string, req 
 			if ginCtx := ctx.Value("gin"); ginCtx != nil {
 				if c, ok := ginCtx.(*gin.Context); ok {
 					c.Set("cliproxy.account_info", accountInfoStr)
+					c.Set("cliproxy.model", routeModel)
 				}
 			}
 		}
 		if ginCtx := ctx.Value("gin"); ginCtx != nil {
 			if c, ok := ginCtx.(*gin.Context); ok {
 				c.Set("cliproxy.provider", provider)
+				if _, exists := c.Get("cliproxy.model"); !exists {
+					c.Set("cliproxy.model", routeModel)
+				}
 			}
 		}
 		execReq := req
@@ -668,12 +672,16 @@ func (m *Manager) executeCountMixedOnce(ctx context.Context, providers []string,
 			if ginCtx := ctx.Value("gin"); ginCtx != nil {
 				if c, ok := ginCtx.(*gin.Context); ok {
 					c.Set("cliproxy.account_info", accountInfoStr)
+					c.Set("cliproxy.model", routeModel)
 				}
 			}
 		}
 		if ginCtx := ctx.Value("gin"); ginCtx != nil {
 			if c, ok := ginCtx.(*gin.Context); ok {
 				c.Set("cliproxy.provider", provider)
+				if _, exists := c.Get("cliproxy.model"); !exists {
+					c.Set("cliproxy.model", routeModel)
+				}
 			}
 		}
 		execReq := req
@@ -739,12 +747,16 @@ func (m *Manager) executeStreamMixedOnce(ctx context.Context, providers []string
 			if ginCtx := ctx.Value("gin"); ginCtx != nil {
 				if c, ok := ginCtx.(*gin.Context); ok {
 					c.Set("cliproxy.account_info", accountInfoStr)
+					c.Set("cliproxy.model", routeModel)
 				}
 			}
 		}
 		if ginCtx := ctx.Value("gin"); ginCtx != nil {
 			if c, ok := ginCtx.(*gin.Context); ok {
 				c.Set("cliproxy.provider", provider)
+				if _, exists := c.Get("cliproxy.model"); !exists {
+					c.Set("cliproxy.model", routeModel)
+				}
 			}
 		}
 		execReq := req
