@@ -63,8 +63,8 @@ pull_code() {
     # 获取远程最新状态
     git fetch origin
 
-    # 强制重置到远程分支状态（保留未跟踪文件）
-    git reset --hard origin/HEAD
+    # 强制重置到当前分支的远程状态（保留未跟踪文件）
+    git reset --hard "@{u}"
     echo "[INFO] 已强制重置到远程分支状态，未跟踪文件已保留"
 
     # 更新子模块（使用--force处理目录不为空的情况）
