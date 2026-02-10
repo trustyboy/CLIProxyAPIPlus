@@ -1,95 +1,91 @@
-# Changelog
+# 更新日志
 
-All notable changes to the CLIProxyAPIPlus project (gf branch) will be documented in this file.
+CLIProxyAPIPlus 项目（gf 分支）的所有重要变更都将记录在此文件中。
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/)，
+本项目遵循 [语义化版本](https://semver.org/lang/zh-CN/spec/v2.0.0.html)。
 
-## [Unreleased]
+## [未发布]
 
-### Added
+### 新增功能
 
-#### Enhanced Logging
-- Request ID tracking for AI API requests (v1/chat/completions, v1/completions, v1/messages, v1/responses)
-- Display provider, model, and account information in log output
-- Structured log fields for easy log analysis and filtering
-- Log format: `[timestamp] [level] | request_id | status | latency | client_ip | method | path | provider=X | model=Y | account=Z`
+#### 增强日志功能
+- AI API 请求的请求 ID 追踪（v1/chat/completions、v1/completions、v1/messages、v1/responses）
+- 在日志输出中显示提供商、模型和账号信息
+- 结构化日志字段，便于日志分析和过滤
+- 日志格式：`[时间戳] [级别] | 请求ID | 状态 | 耗时 | 客户端IP | 方法 | 路径 | provider=X | model=Y | account=Z`
 
-#### Embedded Management UI
-- Management UI embedded directly into the binary as embedded/management.html
-- Offline deployment support - no network download required
-- Faster startup with instant UI availability
-- Version consistency between UI and backend
+#### 嵌入式管理界面
+- 管理界面直接嵌入到二进制文件中（embedded/management.html）
+- 支持离线部署 - 无需网络下载
+- 更快的启动速度，UI 立即可用
+- UI 和后端版本一致性
 
-#### iFlow API Support
-- Session ID generation for iFlow API requests
-- HMAC-SHA256 signature generation for request authentication
+#### 自动化构建脚本
+- 自动化构建脚本（build.sh），具有以下功能：
+  - 检查 git 更新，如果没有新提交则自动退出
+  - 自动停止/启动 supervisor 服务
+  - 使用 `-f` 参数强制构建模式
+  - 自动构建并嵌入 React 前端
+  - 首次构建时自动安装 npm 依赖
+  - 将版本信息注入二进制文件
+  - 支持使用 proxychains 拉取代码（后续版本已移除）
 
-#### Automated Build Script
-- Automated build script (build.sh) with the following features:
-  - Check git updates, automatically exit if no new commits
-  - Automatically stop/start supervisor service
-  - Force build mode with `-f` parameter
-  - Automatically build and embed React frontend
-  - Auto-install npm dependencies on first build
-  - Inject version information into binary
-  - Proxychains support for pulling code (removed in later version)
+#### Web 子模块
+- Web 前端集成为 git 子模块
+- Web 开发使用独立仓库
+- 自动子模块更新
 
-#### Web Submodule
-- Web frontend integrated as git submodule
-- Separate repository for web development
-- Automatic submodule updates
+### 变更
 
-### Changed
+#### 构建流程
+- 简化代码拉取逻辑
+- 优化子模块更新流程
+- 更新时保护未跟踪的配置文件
+- 从 build.sh 中移除 proxychains 依赖
+- 修复 pull_code 函数使用正确的远程分支
 
-#### Build Process
-- Simplified code pulling logic
-- Optimized submodule update process
-- Protected untracked configuration files during updates
-- Removed proxychains dependency from build.sh
-- Fixed pull_code function to use correct remote branch
+#### 日志功能
+- 修复多个渠道使用相同模型时的渠道显示问题
+- 仅在模型可用时显示提供商和模型信息
+- 从 gin.Context 读取实际提供商，而不是从模型名推断
+- 从 gin.Context 读取实际模型（由 auth manager 设置）作为主要来源，fallback 到从请求体提取
 
-#### Logging
-- Fixed channel display issue when multiple channels have the same model
-- Provider and model information only shown when model is available
-- Reads actual provider from gin.Context instead of inferring from model name
-- Reads actual model from gin.Context (set by auth manager) as primary source, fallback to request body extraction
+#### 认证持久化
+- 修复跨重启的禁用状态持久化
+- Auth 元数据正确合并到 auth 文件中
+- 确保禁用的 auth 在服务重启后保持禁用状态
 
-#### Auth Persistence
-- Fixed disabled state persistence across restarts
-- Auth metadata properly merged into auth files
-- Ensures disabled auths remain disabled after service restart
+#### 管理界面
+- 改进资源同步处理
+- management.html 同步可用
+- 资源更新期间更好的错误处理
 
-#### Management UI
-- Improved asset sync handling
-- Synchronous availability of management.html
-- Better error handling during asset updates
+#### SDK 访问
+- 简化提供商生命周期和注册逻辑
+- 更新错误处理和类型
+- 改进注册表管理
 
-#### SDK Access
-- Simplified provider lifecycle and registration logic
-- Updated error handling and types
-- Improved registry management
+### 修复
 
-### Fixed
+- 修复 build.sh 中 git log 命令进入交互模式的问题
+- 修复 build.sh 中 `-f` 参数未传递给 main 函数的问题
+- 修复遗留的合并冲突标记
+- 修复 pull_code 函数问题
+- 修复 Responses API 的 SSE 模型名称重写问题
+- 修复 management.html 可用性问题
+- 修复日志中不显示 provider/model/account 信息的问题
+- 解决请求体被其他中间件读取导致无法提取模型的问题
 
-- Fixed git log command entering interactive mode in build.sh
-- Fixed `-f` parameter not being passed to main function in build.sh
-- Fixed leftover merge conflict marker
-- Fixed pull_code function issues
-- Fixed SSE model name rewriting for Responses API
-- Fixed management.html availability issues
-- Fixed logging where provider/model/account information was not displayed
-- Resolved issue where request body being read by other middlewares prevented model extraction
+### 技术细节
 
-### Technical Details
+#### 日志实现
+**修改的文件：**
+- `internal/logging/gin_logger.go`：增强以提取和记录提供商、模型和账号信息
+- `sdk/cliproxy/auth/conductor.go`：将 routeModel、provider 和账号信息存储到 gin.Context
 
-#### Logging Implementation
-**Files Modified:**
-- `internal/logging/gin_logger.go`: Enhanced to extract and log provider, model, and account information
-- `sdk/cliproxy/auth/conductor.go`: Stores routeModel, provider, and account info into gin.Context
-
-**Key Changes:**
-- In `executeMixedOnce`, `executeCountMixedOnce`, and `executeStreamMixedOnce`:
+**关键变更：**
+- 在 `executeMixedOnce`、`executeCountMixedOnce` 和 `executeStreamMixedOnce` 中：
   ```go
   if ginCtx := ctx.Value("gin"); ginCtx != nil {
       if c, ok := ginCtx.(*gin.Context); ok {
@@ -98,29 +94,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       }
   }
   ```
-- In `GinLogrusLogger`:
+- 在 `GinLogrusLogger` 中：
   ```go
-  // First try to get model from gin.Context (set by auth manager)
+  // 首先尝试从 gin.Context 获取模型（由 auth manager 设置）
   model := ""
   if modelVal, exists := c.Get("cliproxy.model"); exists {
       if modelStr, ok := modelVal.(string); ok {
           model = modelStr
       }
   }
-  // Fallback to extraction from request body
+  // Fallback 到从请求体提取
   if model == "" {
       model = extractModelFromRequest(c)
   }
   ```
 
-#### Auth Persistence Implementation
-**Files Modified:**
-- `sdk/auth/filestore.go`: Added `mergeMetadataIntoFile()` function
-- `internal/watcher/synthesizer/file.go`: Properly handle disabled state
+#### 认证持久化实现
+**修改的文件：**
+- `sdk/auth/filestore.go`：添加 `mergeMetadataIntoFile()` 函数
+- `internal/watcher/synthesizer/file.go`：正确处理禁用状态
 
-**Key Changes:**
+**关键变更：**
 ```go
-// After saving storage, merge metadata (like disabled state) into the file
+// 保存存储后，将元数据（如禁用状态）合并到文件中
 if auth.Metadata != nil && len(auth.Metadata) > 0 {
     if err = s.mergeMetadataIntoFile(path, auth); err != nil {
         return "", fmt.Errorf("auth filestore: merge metadata failed: %w", err)
@@ -128,53 +124,53 @@ if auth.Metadata != nil && len(auth.Metadata) > 0 {
 }
 ```
 
-#### Build Script Improvements
-**Files Modified:**
-- `build.sh`: Complete rewrite with automation features
+#### 构建脚本改进
+**修改的文件：**
+- `build.sh`：完全重写，具有自动化功能
 
-**Key Features:**
-- Git update checking before build
-- Automatic service management
-- Web frontend building and embedding
-- Version injection
-- Submodule management
+**关键功能：**
+- 构建前检查 git 更新
+- 自动服务管理
+- Web 前端构建和嵌入
+- 版本注入
+- 子模块管理
 
-### Breaking Changes
+### 破坏性变更
 
-None
+无
 
-### Migration Notes
+### 迁移说明
 
-#### From Main Branch to GF Branch
+#### 从主分支迁移到 GF 分支
 
-1. **Update README**: The gf branch includes enhanced features not present in main
-2. **Build Process**: Use `./build.sh` instead of manual `go build`
-3. **Web Deployment**: Web is now a git submodule, update it with:
+1. **更新 README**：gf 分支包含主分支中没有的增强功能
+2. **构建流程**：使用 `./build.sh` 而不是手动 `go build`
+3. **Web 部署**：Web 现在是 git 子模块，使用以下命令更新：
    ```bash
    git submodule update --remote web
    ```
-4. **Logging Format**: Logs now include additional fields (provider, model, account)
-5. **Management UI**: Access via embedded `/management.html` instead of downloading
+4. **日志格式**：日志现在包含额外字段（provider、model、account）
+5. **管理界面**：通过嵌入的 `/management.html` 访问，而不是下载
 
-### Contributors
+### 贡献者
 
-- Mainline: router-for-me/CLIProxyAPI
-- Plus features: Community contributors
-- iFlow integration: router-for-me
-- GitHub Copilot: em4go
-- Kiro integration: fuko2935, Ravens2121
+- 主线：router-for-me/CLIProxyAPI
+- Plus 功能：社区贡献者
+- iFlow 集成：router-for-me
+- GitHub Copilot：em4go
+- Kiro 集成：fuko2935, Ravens2121
 
-### Statistics
+### 统计信息
 
-**Changes from main branch:**
-- 32 files changed
-- 1,477 insertions(+)
-- 650 deletions(-)
-- Net: +827 lines
+**相对于主分支的变更：**
+- 32 个文件改动
+- 1,477 行新增
+- 650 行删除
+- 净增：827 行
 
-**Key Categories:**
-- Logging: 129 insertions (gin_logger.go)
-- Build Script: 236 insertions (build.sh)
-- Management UI: 193 insertions (internal/managementasset/)
-- Auth/SDK: 288 insertions across multiple files
-- Documentation: Updated README files
+**主要类别：**
+- 日志：129 行新增（gin_logger.go）
+- 构建脚本：236 行新增（build.sh）
+- 管理界面：193 行新增（internal/managementasset/）
+- 认证/SDK：288 行新增，分布在多个文件中
+- 文档：更新 README 文件
