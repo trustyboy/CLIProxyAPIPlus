@@ -63,12 +63,16 @@ pull_code() {
     # 获取远程最新状态
     git fetch origin
 
+    # 先同步子模块到当前提交版本，避免 reset 时出现目录非空警告
+    echo "[INFO] 同步子模块..."
+    git submodule update --init --recursive
+
     # 强制重置到当前分支的远程状态（保留未跟踪文件）
     git reset --hard "@{u}"
     echo "[INFO] 已强制重置到远程分支状态，未跟踪文件已保留"
 
-    # 更新子模块（使用--force处理目录不为空的情况）
-    echo "[INFO] 更新子模块..."
+    # 更新子模块到远程最新版本（使用--force处理目录不为空的情况）
+    echo "[INFO] 更新子模块到远程最新版本..."
     git submodule update --remote --recursive --force
     echo "[INFO] 子模块已更新"
 }
