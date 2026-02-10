@@ -29,7 +29,6 @@ CLIProxyAPIPlus 项目（gf 分支）的所有重要变更都将记录在此文�
   - 自动构建并嵌入 React 前端
   - 首次构建时自动安装 npm 依赖
   - 将版本信息注入二进制文件
-  - 支持使用 proxychains 拉取代码（后续版本已移除）
 
 #### Web 子模块
 - Web 前端集成为 git 子模块
@@ -55,27 +54,6 @@ CLIProxyAPIPlus 项目（gf 分支）的所有重要变更都将记录在此文�
 - 修复跨重启的禁用状态持久化
 - Auth 元数据正确合并到 auth 文件中
 - 确保禁用的 auth 在服务重启后保持禁用状态
-
-#### 管理界面
-- 改进资源同步处理
-- management.html 同步可用
-- 资源更新期间更好的错误处理
-
-#### SDK 访问
-- 简化提供商生命周期和注册逻辑
-- 更新错误处理和类型
-- 改进注册表管理
-
-### 修复
-
-- 修复 build.sh 中 git log 命令进入交互模式的问题
-- 修复 build.sh 中 `-f` 参数未传递给 main 函数的问题
-- 修复遗留的合并冲突标记
-- 修复 pull_code 函数问题
-- 修复 Responses API 的 SSE 模型名称重写问题
-- 修复 management.html 可用性问题
-- 修复日志中不显示 provider/model/account 信息的问题
-- 解决请求体被其他中间件读取导致无法提取模型的问题
 
 ### 技术细节
 
@@ -151,26 +129,3 @@ if auth.Metadata != nil && len(auth.Metadata) > 0 {
    ```
 4. **日志格式**：日志现在包含额外字段（provider、model、account）
 5. **管理界面**：通过嵌入的 `/management.html` 访问，而不是下载
-
-### 贡献者
-
-- 主线：router-for-me/CLIProxyAPI
-- Plus 功能：社区贡献者
-- iFlow 集成：router-for-me
-- GitHub Copilot：em4go
-- Kiro 集成：fuko2935, Ravens2121
-
-### 统计信息
-
-**相对于主分支的变更：**
-- 32 个文件改动
-- 1,477 行新增
-- 650 行删除
-- 净增：827 行
-
-**主要类别：**
-- 日志：129 行新增（gin_logger.go）
-- 构建脚本：236 行新增（build.sh）
-- 管理界面：193 行新增（internal/managementasset/）
-- 认证/SDK：288 行新增，分布在多个文件中
-- 文档：更新 README 文件
