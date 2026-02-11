@@ -1,0 +1,18 @@
+---
+id: cliproxyapiplus-provider-change-tests
+trigger: "when changing executor/translator behavior"
+confidence: 0.65
+domain: testing
+source: local-repo-analysis
+---
+
+# Add/adjust Go tests for provider changes
+
+## Action
+When changing executor or translator behavior, add or update Go tests in:
+- internal/runtime/executor/*_test.go
+- internal/translator/**/_test.go
+- test/ (integration-style tests)
+
+## Evidence
+- Recent provider/translator changes commonly include *_test.go updates

@@ -1,0 +1,16 @@
+---
+id: cliproxyapiplus-commit-convention
+trigger: "when writing a commit message"
+confidence: 0.8
+domain: git
+source: local-repo-analysis
+---
+
+# Use Conventional Commits
+
+## Action
+Prefix commits with: feat:, fix:, refactor:, docs:, chore:, ci:, build:
+
+## Evidence
+- Analyzed 200 commits
+- Frequent use of conventional prefixes in recent history

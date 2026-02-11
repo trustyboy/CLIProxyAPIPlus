@@ -1,0 +1,17 @@
+---
+id: cliproxyapiplus-config-change-pairing
+trigger: "when modifying configuration behavior"
+confidence: 0.7
+domain: config
+source: local-repo-analysis
+---
+
+# Keep config.example.yaml in sync
+
+## Action
+When changing configuration logic, update:
+- internal/config/config.go (or migration helpers)
+- config.example.yaml examples/defaults
+
+## Evidence
+- Many commits update internal/config along with config.example.yaml
