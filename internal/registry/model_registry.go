@@ -1212,3 +1212,26 @@ func (r *ModelRegistry) GetModelsForClient(clientID string) []*ModelInfo {
 	}
 	return result
 }
+
+// GetAllModels returns a copy of all registered models
+func (r *ModelRegistry) GetAllModels() map[string]*ModelRegistration {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	result := make(map[string]*ModelRegistration, len(r.models))
+	for modelID, reg := range r.models {
+		result[modelID] = reg
+	}
+	return result
+}
+
+// GetClientProvider returns the provider identifier for a given client ID
+func (r *ModelRegistry) GetClientProvider(clientID string) string {
+	r.mutex.RLock()
+	defer r.mutex.RUnlock()
+
+	if provider, ok := r.clientProviders[clientID]; ok {
+		return provider
+	}
+	return ""
+}

@@ -9,6 +9,28 @@ CLIProxyAPIPlus 项目（gf 分支）的所有重要变更都将记录在此文�
 
 ### 新增功能
 
+#### 模型可用性管理页面
+- 新增独立的模型可用性管理页面 (`/model-availability`)
+- 展示当前处于不可用状态的模型列表，包括：
+  - 模型名称和 ID
+  - 供应商 (Provider)
+  - 凭证 (Client ID)
+  - 不可用原因（配额超限/已暂停/冷却中）
+  - 不可用开始时间
+- 提供手动重置功能，可恢复模型的可用状态
+- 支持中英文国际化
+- 通过侧边栏导航访问，独立于 Dashboard
+
+**新增 API 端点：**
+- `GET /v0/management/model-availability` - 获取不可用模型列表
+- `POST /v0/management/model-availability/:model_id/reset` - 重置模型可用性
+
+**涉及文件：**
+- 后端：`internal/api/handlers/management/model_availability.go`
+- 后端：`internal/registry/model_registry.go` (添加辅助方法)
+- 前端：`web/src/pages/ModelAvailabilityPage.tsx`
+- 前端：`web/src/services/api/modelAvailability.ts`
+
 #### 增强日志功能
 - AI API 请求的请求 ID 追踪（v1/chat/completions、v1/completions、v1/messages、v1/responses）
 - 在日志输出中显示提供商、模型和账号信息

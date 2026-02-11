@@ -656,6 +656,10 @@ func (s *Server) registerManagementRoutes() {
 		mgmt.GET("/github-auth-url", s.mgmt.RequestGitHubToken)
 		mgmt.POST("/oauth-callback", s.mgmt.PostOAuthCallback)
 		mgmt.GET("/get-auth-status", s.mgmt.GetAuthStatus)
+
+		// Model availability endpoints
+		mgmt.GET("/model-availability", s.mgmt.GetUnavailableModels)
+		mgmt.POST("/model-availability/:model_id/reset", s.mgmt.ResetModelAvailability)
 	}
 }
 
