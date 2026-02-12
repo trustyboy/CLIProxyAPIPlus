@@ -199,7 +199,8 @@ type RedisCacheConfig struct {
 
 const (
 	// DefaultRedisCacheTTL is the default TTL for Redis cache entries.
-	DefaultRedisCacheTTL = 86400 // 1 day
+	// -1 means never expire (permanent)
+	DefaultRedisCacheTTL = -1
 	// DefaultRedisKeyPrefix is the default prefix for Redis keys.
 	DefaultRedisKeyPrefix = "cliproxy:usage:"
 )

@@ -405,8 +405,14 @@ func (s *redisStatsStorage) saveSnapshot(ctx context.Context, snapshot Statistic
 		return
 	}
 
-	ttl := time.Duration(s.config.TTL) * time.Second
-	if ttl == 0 {
+	var ttl time.Duration
+	if s.config.TTL == -1 {
+		// -1 means never expire
+		ttl = 0
+	} else if s.config.TTL > 0 {
+		ttl = time.Duration(s.config.TTL) * time.Second
+	} else {
+		// Default to 1 day if TTL is not set or invalid
 		ttl = 24 * time.Hour
 	}
 
