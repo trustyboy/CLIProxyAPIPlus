@@ -9,6 +9,32 @@ CLIProxyAPIPlus 项目（gf 分支）的所有重要变更都将记录在此文�
 
 ### 新增功能
 
+#### Redis 统计缓存
+- 新增 Redis 缓存支持，用于持久化使用统计
+- 支持服务重启后统计数据不丢失
+- 配置选项：
+  - `enable`: 是否启用 Redis 缓存
+  - `addr`: Redis 地址（如 `localhost:6379`）
+  - `password`: Redis 密码（可选）
+  - `db`: Redis 数据库编号（默认 0）
+  - `key-prefix`: Redis key 前缀（默认 `cliproxy:usage:`）
+  - `ttl`: 缓存过期时间（秒，默认 86400 = 1天）
+- 前端可视化配置界面支持
+- 未启用时自动回退到内存存储
+
+**涉及文件：**
+- 后端：`internal/config/config.go` - 添加 RedisCacheConfig 结构
+- 后端：`internal/cache/redis.go` - Redis 客户端封装
+- 后端：`internal/usage/stats.go` - 统计存储接口和实现
+- 后端：`internal/api/server.go` - 初始化 Redis 和统计存储
+- 后端：`internal/api/handlers/management/handler.go` - 使用 StatsStorage 接口
+- 后端：`internal/usage/logger_plugin.go` - 动态获取存储
+- 前端：`web/src/types/visualConfig.ts` - RedisCacheConfig 类型
+- 前端：`web/src/hooks/useVisualConfig.ts` - 配置序列化/反序列化
+- 前端：`web/src/components/config/VisualConfigEditor.tsx` - 可视化配置界面
+- 前端：`web/src/i18n/locales/zh-CN.json` - 中文翻译
+- 前端：`web/src/i18n/locales/en.json` - 英文翻译
+
 #### 模型可用性管理页面
 - 新增独立的模型可用性管理页面 (`/model-availability`)
 - 展示当前处于不可用状态的模型列表，包括：

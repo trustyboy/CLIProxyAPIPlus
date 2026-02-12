@@ -64,6 +64,9 @@ type Config struct {
 	// UsageStatisticsEnabled toggles in-memory usage aggregation; when false, usage data is discarded.
 	UsageStatisticsEnabled bool `yaml:"usage-statistics-enabled" json:"usage-statistics-enabled"`
 
+	// UsageStatisticsCache configures Redis caching for usage statistics.
+	UsageStatisticsCache RedisCacheConfig `yaml:"usage-statistics-cache" json:"usage-statistics-cache"`
+
 	// DisableCooling disables quota cooldown scheduling when true.
 	DisableCooling bool `yaml:"disable-cooling" json:"disable-cooling"`
 
@@ -177,6 +180,29 @@ type RoutingConfig struct {
 	// Supported values: "round-robin" (default), "fill-first".
 	Strategy string `yaml:"strategy,omitempty" json:"strategy,omitempty"`
 }
+
+// RedisCacheConfig configures Redis caching for usage statistics.
+type RedisCacheConfig struct {
+	// Enable toggles Redis caching for usage statistics.
+	Enable bool `yaml:"enable" json:"enable"`
+	// Addr is the Redis address (e.g., "localhost:6379").
+	Addr string `yaml:"addr" json:"addr"`
+	// Password is the Redis password (not exposed in JSON).
+	Password string `yaml:"password" json:"-"`
+	// DB is the Redis database number.
+	DB int `yaml:"db" json:"db"`
+	// KeyPrefix is the prefix for Redis keys.
+	KeyPrefix string `yaml:"key-prefix" json:"key-prefix"`
+	// TTL is the expiration time in seconds (default: 86400 = 1 day).
+	TTL int `yaml:"ttl" json:"ttl"`
+}
+
+const (
+	// DefaultRedisCacheTTL is the default TTL for Redis cache entries.
+	DefaultRedisCacheTTL = 86400 // 1 day
+	// DefaultRedisKeyPrefix is the default prefix for Redis keys.
+	DefaultRedisKeyPrefix = "cliproxy:usage:"
+)
 
 // OAuthModelAlias defines a model ID alias for a specific channel.
 // It maps the upstream model name (Name) to the client-visible alias (Alias).
@@ -570,6 +596,14 @@ func LoadConfigOptional(configFile string, optional bool) (*Config, error) {
 	cfg.LogsMaxTotalSizeMB = 0
 	cfg.ErrorLogsMaxFiles = 10
 	cfg.UsageStatisticsEnabled = false
+	cfg.UsageStatisticsCache = RedisCacheConfig{
+		Enable:     false,
+		Addr:       "",
+		Password:   "",
+		DB:         0,
+		KeyPrefix:  DefaultRedisKeyPrefix,
+		TTL:        DefaultRedisCacheTTL,
+	}
 	cfg.DisableCooling = false
 	cfg.Pprof.Enable = false
 	cfg.Pprof.Addr = DefaultPprofAddr

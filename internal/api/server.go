@@ -20,6 +20,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/access"
+	"github.com/router-for-me/CLIProxyAPI/v6/internal/cache"
 	managementHandlers "github.com/router-for-me/CLIProxyAPI/v6/internal/api/handlers/management"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/api/middleware"
 	"github.com/router-for-me/CLIProxyAPI/v6/internal/api/modules"
@@ -194,6 +195,17 @@ func NewServer(cfg *config.Config, authManager *auth.Manager, accessManager *sdk
 	if !cfg.Debug {
 		gin.SetMode(gin.ReleaseMode)
 	}
+
+	// Initialize Redis cache for usage statistics if configured
+	if cfg.UsageStatisticsCache.Enable {
+		if err := cache.InitRedisCache(cfg.UsageStatisticsCache); err != nil {
+			log.Warnf("Failed to initialize Redis cache for usage statistics: %v, falling back to in-memory storage", err)
+		} else {
+			log.Infof("Redis cache initialized for usage statistics: %s", cfg.UsageStatisticsCache.Addr)
+		}
+	}
+	// Initialize usage stats storage
+	usage.InitStatsStorage(cfg.UsageStatisticsCache)
 
 	// Create gin engine
 	engine := gin.New()
