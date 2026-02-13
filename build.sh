@@ -147,6 +147,31 @@ build_binary() {
     echo "可执行文件已生成于: ${OUTPUT_DIR}/${OUTPUT_NAME}"
 }
 
+# 部署可执行文件（停止服务后调用）
+deploy_binary() {
+    if [[ "${UPDATE_MODE}" != true ]]; then
+        return  # 非更新模式不需要部署
+    fi
+
+    echo "[INFO] 部署可执行文件..."
+
+    # 检查可执行文件是否存在
+    if [[ ! -f "${OUTPUT_DIR}/${OUTPUT_NAME}" ]]; then
+        echo "[ERROR] 可执行文件不存在: ${OUTPUT_DIR}/${OUTPUT_NAME}"
+        exit 1
+    fi
+
+    # 备份旧文件
+    if [[ -f "${OUTPUT_DIR}/${OUTPUT_NAME}" ]]; then
+        BACKUP_NAME="${OUTPUT_DIR}/${OUTPUT_NAME}.backup.$(date +%Y%m%d%H%M%S)"
+        cp "${OUTPUT_DIR}/${OUTPUT_NAME}" "${BACKUP_NAME}"
+        echo "[INFO] 已备份旧文件到: ${BACKUP_NAME}"
+    fi
+
+    # 新文件已经在目标位置，无需移动
+    echo "[INFO] 可执行文件已就绪: ${OUTPUT_DIR}/${OUTPUT_NAME}"
+}
+
 # 启动服务
 start_service() {
     echo "[INFO] 启动服务: ${SERVICE_NAME}"
@@ -199,24 +224,27 @@ main() {
             check_git_updates
         fi
 
-        # 2. 停止服务
-        stop_service
-
-        # 3. 拉取代码
+        # 2. 拉取代码
         pull_code
     else
         echo "[INFO] 构建模式，跳过更新检查"
     fi
 
-    # 4. 构建Web前端
+    # 3. 构建Web前端
     build_web
 
-    # 5. 编译
+    # 4. 编译
     build_binary
 
-    # 只在更新模式下启动服务
+    # 5. 构建成功，检查是否需要更新服务
     if [[ "${UPDATE_MODE}" == true ]]; then
-        # 6. 启动服务
+        # 5.1 停止旧服务（确保构建成功后再停服务）
+        stop_service
+
+        # 5.2 部署新可执行文件（停止服务后覆盖，安全）
+        deploy_binary
+
+        # 5.3 启动新服务
         start_service
     fi
 
